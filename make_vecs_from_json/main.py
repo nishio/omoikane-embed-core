@@ -13,21 +13,22 @@ import signal
 import time
 import json
 import tiktoken
-import openai
+import dotenv
+import os
+from openai import OpenAI
+dotenv.load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 import pickle
 import numpy as np
 from tqdm import tqdm
 import re
-import dotenv
-import os
 
 
 DEFAULT_BLOCK_SIZE = 500
 
-dotenv.load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PROJECT = os.getenv("PROJECT_NAME")
-openai.api_key = OPENAI_API_KEY
 enc = tiktoken.get_encoding("cl100k_base")
 
 
@@ -48,7 +49,7 @@ def embed_texts(texts, sleep_after_sucess=1):
 
     while True:
         try:
-            res = openai.Embedding.create(input=texts, model="text-embedding-ada-002")
+            res = client.embeddings.create(input=texts, model="text-embedding-ada-002")
             time.sleep(sleep_after_sucess)
         except Exception as e:
             print(e)
@@ -236,8 +237,8 @@ class VectorStore:
         for batch in tqdm(batches):
             texts = [body for body, _payload in batch]
             res = embed_texts(texts)
-            for i, data in enumerate(res["data"]):
-                vec = data["embedding"]
+            for i, data in enumerate(res.data):
+                vec = data.embedding
                 body, payload = batch[i]
                 self.cache[body] = (vec, payload)
 
